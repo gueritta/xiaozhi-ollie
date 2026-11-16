@@ -14,5 +14,9 @@ OLLIE_MEDIR=1 ./build/simulador > /dev/null  # rodada de medição: Clawd sem ac
 ./build/simulador > /dev/null
 resultado=0
 python3 medir.py || resultado=$?
-[[ "$1" == "--abrir" ]] && open saida/folha.png saida/poses.png
+if [[ "$1" == "--abrir" ]]; then
+  # abre as folhas geradas: open (macOS) ou xdg-open (Linux)
+  if command -v open >/dev/null 2>&1; then open saida/folha.png saida/poses.png
+  else xdg-open saida/folha.png >/dev/null 2>&1; xdg-open saida/poses.png >/dev/null 2>&1; fi
+fi
 exit $resultado

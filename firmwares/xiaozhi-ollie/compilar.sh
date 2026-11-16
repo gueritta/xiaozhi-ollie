@@ -27,6 +27,12 @@ esac
 echo "Idioma: $IDIOMA"
 # Caminhos da sua máquina (opcional, fora do git): firmwares/xiaozhi-ollie/local.env
 [[ -f "$AQUI/local.env" ]] && source "$AQUI/local.env"
+# ESP-IDF: usa IDF_PATH do ambiente/local.env, senão procura as duas pastas usuais
+if [[ -z "${IDF_PATH:-}" ]]; then
+  for d in "$HOME/esp/esp-idf-v6.1" "$HOME/esp/esp-idf"; do
+    [[ -d "$d" ]] && { IDF_PATH="$d"; break }
+  done
+fi
 export IDF_PATH="${IDF_PATH:-$HOME/esp/esp-idf-v6.1}"
 export IDF_TOOLS_PATH="${IDF_TOOLS_PATH:-$HOME/.espressif}"
 export IDF_COMPONENT_CACHE_PATH="$IDF_TOOLS_PATH/component-cache"

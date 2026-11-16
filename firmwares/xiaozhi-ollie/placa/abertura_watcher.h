@@ -83,7 +83,7 @@ private:
     static constexpr int kGradeW = 20;
     static constexpr int kGradeH = 18;
     static constexpr uint32_t kDuracaoMs = 3200;
-    static constexpr uint32_t kLaranja = 0xD97757;
+    static constexpr uint32_t kLaranja = 0x00FF00;
     static constexpr uint32_t kOlho = 0x1E1816;
     static constexpr uint32_t kRosa = 0xF08C96;
 

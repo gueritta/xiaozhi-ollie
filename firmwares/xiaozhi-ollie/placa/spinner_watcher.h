@@ -5,7 +5,7 @@
 #include <lvgl.h>
 
 inline lv_obj_t* SpinnerWatcher(lv_obj_t* pai, int tamanho, int espessura, uint32_t cor_fundo,
-                                uint32_t cor = 0xD97757) {
+                                uint32_t cor = 0x00FF00) {
     auto arco = lv_arc_create(pai);
     lv_obj_set_size(arco, tamanho, tamanho);
     lv_arc_set_bg_angles(arco, 0, 360);

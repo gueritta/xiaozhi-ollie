@@ -7,13 +7,19 @@ set -euo pipefail
 DIR="${0:A:h}"
 BUILD="$DIR/xiaozhi-ollie/xiaozhi-esp32/build"
 export UV_CACHE_DIR="$DIR/../servidor/.cache/uv"
-ESPTOOL=(uvx --from "esptool>=5,<6" esptool --chip esp32s3)
+if command -v esptool >/dev/null 2>&1; then
+  ESPTOOL=(esptool --chip esp32s3)
+elif command -v esptool.py >/dev/null 2>&1; then
+  ESPTOOL=(esptool.py --chip esp32s3)
+else
+  ESPTOOL=(uvx --from "esptool>=5,<6" esptool --chip esp32s3)
+fi
 
 [[ -f "$BUILD/xiaozhi.bin" ]] || { echo "Compile antes: xiaozhi-ollie/compilar.sh" >&2; exit 1; }
 
 porta="${1:-}"
 if [[ -z "$porta" ]]; then
-  for p in /dev/cu.usbmodem*(N); do
+  for p in /dev/cu.usbmodem* /dev/ttyACM* /dev/ttyUSB*(N); do
     if "${ESPTOOL[@]}" -p "$p" chip-id >/dev/null 2>&1; then porta="$p"; break; fi
   done
 fi

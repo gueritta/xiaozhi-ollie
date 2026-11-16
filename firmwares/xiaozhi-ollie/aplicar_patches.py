@@ -10,6 +10,7 @@ Idempotente. Uso: python aplicar_patches.py
 """
 
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -119,9 +120,16 @@ trocar(manifesto, "  78/esp-wifi-connect: ~3.3.1\n",
        '  78/esp-wifi-connect:\n    version: ~3.3.1\n    override_path: "../../esp-wifi-connect"\n')
 
 # 5. Endereço do servidor embutido ---------------------------------------------
+#    URL_BASE_OTA (ex.: http://10.0.0.5:8003) cobre rede local sem Tailscale;
+#    sem ela, vale o Funnel do Tailscale montado a partir de HOST_PUBLICO/SEGREDO.
 env = dict(re.findall(r"^([A-Z_]+)=(.*)$", ENV.read_text(), re.M)) if ENV.exists() else {}
-if env.get("HOST_PUBLICO") and env.get("SEGREDO"):
+if env.get("URL_BASE_OTA"):
+    ota = env["URL_BASE_OTA"].rstrip("/") + "/xiaozhi/ota/"
+elif env.get("HOST_PUBLICO") and env.get("SEGREDO"):
     ota = f"https://{env['HOST_PUBLICO']}/{env['SEGREDO']}/http/xiaozhi/ota/"
+else:
+    ota = ""
+if ota:
     cfg = XZ / "main/boards/sensecap-watcher/config.json"
     placa = json.loads(cfg.read_text(encoding="utf-8"))
     extra = placa["builds"][0]["sdkconfig_append"]
@@ -131,7 +139,7 @@ if env.get("HOST_PUBLICO") and env.get("SEGREDO"):
         extra.append("CONFIG_ESP_TASK_WDT_PANIC=y")
     cfg.write_text(json.dumps(placa, ensure_ascii=False, indent=4) + "\n", encoding="utf-8")
 else:
-    problemas.append("servidor/.env sem HOST_PUBLICO/SEGREDO: endereço OTA não embutido")
+    problemas.append("servidor/.env sem URL_BASE_OTA nem HOST_PUBLICO/SEGREDO: endereço OTA não embutido")
 
 # 6. Mascote: Clawd (Claude Code) no lugar dos emojis ---------------------------
 #    A coleção vem de mascote-clawd/emocoes (gerada por mascote-clawd/gerar.py).
@@ -1442,7 +1450,7 @@ trocar(placa, """        // Atualização do sistema: spinner no lugar do Clawd,
                 lv_obj_move_to_index(pendencias_, 0);
                 lv_obj_set_style_text_font(pendencias_, Fontes::Pequena(), 0);
                 lv_obj_set_style_text_color(pendencias_, lv_color_hex(0x000000), 0);
-                lv_obj_set_style_bg_color(pendencias_, lv_color_hex(0xD97757), 0);
+                lv_obj_set_style_bg_color(pendencias_, lv_color_hex(0x00FF00), 0);
                 lv_obj_set_style_bg_opa(pendencias_, LV_OPA_COVER, 0);
                 lv_obj_set_style_radius(pendencias_, 12, 0);
                 lv_obj_set_style_pad_hor(pendencias_, 12, 0);
@@ -1483,6 +1491,65 @@ trocar(placa, """            self->long_press_cnt_++; // 每隔20ms加一
             }
             // Segurar 20 s restaura as configurações de fábrica: 2 + 0,02 * 900 = 20
             if (self->long_press_cnt_ > 900) {""")
+
+# 30. I/O extra: cor do LED RGB, I2C do Grove/header e GPIOs livres (placa/io_extra.h) -----
+trocar(placa, """#include "cliques_watcher.h"    // ação de 1, 2 e 3 cliques fora da gaveta
+""", """#include "cliques_watcher.h"    // ação de 1, 2 e 3 cliques fora da gaveta
+#include "io_extra.h"         // LED RGB, I2C do Grove/header e GPIOs livres
+""")
+# LED de estado passa a ser a fita de 1 LED (ws2813 no GPIO40), que aceita cor de verdade
+trocar(placa, """    virtual Led* GetLed() override {
+        static SingleLed led(BUILTIN_LED_GPIO);
+        return &led;
+    }""", """    virtual Led* GetLed() override {
+        static CircularStrip led(BUILTIN_LED_GPIO, 1);
+        return &led;
+    }""")
+trocar(placa, """        RegistrarApps(*gaveta_);
+        gaveta_->Iniciar();
+    }""", """        RegistrarApps(*gaveta_);
+        gaveta_->Iniciar();
+        IoExtra::Instalar(i2c_bus_, static_cast<CircularStrip*>(GetLed()));
+    }""")
+
+# CircularStrip: travada_ deixa a cor pedida por voz vencer os estados do aparelho
+faixa_h = XZ / "main/led/circular_strip.h"
+trocar(faixa_h, "    void SetAllColor(StripColor color);",
+       "    void SetTravada(bool travada) { travada_ = travada; }  // cor definida pelo MCP\n"
+       "    void SetAllColor(StripColor color);")
+trocar(faixa_h, "    uint8_t default_brightness_ = DEFAULT_BRIGHTNESS;",
+       "    bool travada_ = false;\n    uint8_t default_brightness_ = DEFAULT_BRIGHTNESS;")
+faixa_cc = XZ / "main/led/circular_strip.cc"
+trocar(faixa_cc, """void CircularStrip::OnStateChanged() {
+    auto& app = Application::GetInstance();""", """void CircularStrip::OnStateChanged() {
+    if (travada_) return;  // cor pedida por voz (self.led.set_color) não é sobrescrita
+    auto& app = Application::GetInstance();""")
+
+# Pinos livres do header 2x4 e UART: no local.env (export OLLIE_GPIO_LIVRES="4,5",
+# OLLIE_UART_TX="6", OLLIE_UART_RX="5", OLLIE_UART_BAUD="115200")
+# Se as variáveis não vieram do ambiente (rodou o script direto, sem o compilar.sh), lê o local.env
+local_env = AQUI / "local.env"
+if local_env.exists() and not os.environ.get("OLLIE_GPIO_LIVRES"):
+    for linha in local_env.read_text(encoding="utf-8").splitlines():
+        m = re.match(r'\s*export\s+([A-Z_]+)=(.*)$', linha)
+        if m:
+            os.environ.setdefault(m.group(1), m.group(2).strip().strip('"').strip("'"))
+livres = os.environ.get("OLLIE_GPIO_LIVRES", "").strip()
+uart_tx = os.environ.get("OLLIE_UART_TX", "").strip()
+uart_rx = os.environ.get("OLLIE_UART_RX", "").strip()
+uart_baud = os.environ.get("OLLIE_UART_BAUD", "115200").strip() or "115200"
+if not uart_baud.isdigit() or not (300 <= int(uart_baud) <= 921600):
+    problemas.append(f"OLLIE_UART_BAUD fora de 300..921600: {uart_baud!r}")
+    uart_baud = "115200"
+arq_io = placa_dir / "io_extra.h"
+if arq_io.exists():
+    texto_io = (arq_io.read_text(encoding="utf-8")
+                .replace("{{LIVRES}}", livres)
+                .replace("{{UART_TX}}", uart_tx)
+                .replace("{{UART_RX}}", uart_rx)
+                .replace("{{UART_BAUD}}", uart_baud))
+    arq_io.write_text(texto_io, encoding="utf-8")
+    print(f"GPIOs livres no header: {livres or '(nenhum)'} | UART tx={uart_tx or '-'} rx={uart_rx or '-'} baud={uart_baud}")
 
 
 if problemas:

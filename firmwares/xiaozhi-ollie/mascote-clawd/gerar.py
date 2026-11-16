@@ -16,8 +16,8 @@ LADO = 128
 PX = 6                      # tamanho de cada "pixel" do desenho
 GRADE_W, GRADE_H = 20, 18   # grade do desenho em pixels lógicos
 
-LARANJA = (217, 119, 87)    # laranja-argila do Claude
-LARANJA_ESCURO = (178, 88, 62)
+LARANJA = (0, 255, 0)       # verde mais vivo possível (era o laranja-argila do Claude)
+LARANJA_ESCURO = (0, 150, 0)
 OLHO = (30, 24, 22)
 BRANCO = (255, 255, 255)
 ROSA = (240, 140, 150)

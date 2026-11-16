@@ -83,7 +83,7 @@ public:
 
 private:
     static constexpr uint32_t kQuadroMs = 120;
-    static constexpr uint32_t kLaranja = 0xD97757;
+    static constexpr uint32_t kLaranja = 0x00FF00;
 
     // · ✢ ✳ ✶ ✻ ✽: raios, comprimento e espessura (px); 0 raios = ponto
     struct Quadro {

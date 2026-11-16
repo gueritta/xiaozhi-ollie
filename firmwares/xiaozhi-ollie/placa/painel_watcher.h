@@ -78,7 +78,7 @@ public:
         lv_obj_set_style_pad_all(texto_box_, 0, 0);
         lv_obj_set_scroll_dir(texto_box_, LV_DIR_VER);
         lv_obj_set_scrollbar_mode(texto_box_, LV_SCROLLBAR_MODE_ACTIVE);
-        lv_obj_set_style_bg_color(texto_box_, lv_color_hex(0xD97757), LV_PART_SCROLLBAR);
+        lv_obj_set_style_bg_color(texto_box_, lv_color_hex(0x00FF00), LV_PART_SCROLLBAR);
         lv_obj_align(texto_box_, LV_ALIGN_TOP_MID, 0, 96);
         auto rotulo = lv_label_create(texto_box_);
         lv_obj_set_width(rotulo, 288);
@@ -319,7 +319,7 @@ public:
             auto r = Rotulo(f, cor, t);
             lv_obj_align(r, LV_ALIGN_CENTER, 0, y);
         };
-        linha(Fontes::Grande(), 0xD97757, TR("Uso do Claude", "Claude usage", "Claude 用量", "Uso de Claude"), -96);
+        linha(Fontes::Grande(), 0x00FF00, TR("Uso do Claude", "Claude usage", "Claude 用量", "Uso de Claude"), -96);
         linha(Fontes::Grande(), CorNivel(pct_5h), TR("5 h: ", "5 h: ", "5 小时：", "5 h: ") + std::to_string(pct_5h) + "%", -44);
         linha(Fontes::Pequena(), 0x9A9A9A, TR("reinicia em ", "resets in ", "", "se reinicia en ") + Duracao(reinicio_5h_s) +
                  TR("", "", " 后重置", ""), -14);
@@ -347,12 +347,12 @@ public:
             auto anel = Forma(raiz_, 20, 20, 0, 0, 0x000000);
             lv_obj_set_style_bg_opa(anel, LV_OPA_TRANSP, 0);
             lv_obj_set_style_border_width(anel, 2, 0);
-            lv_obj_set_style_border_color(anel, lv_color_hex(0xD97757), 0);
+            lv_obj_set_style_border_color(anel, lv_color_hex(0x00FF00), 0);
             PosicionarNoAro(anel, ((casa % kPosicoesAro) + kPosicoesAro) % kPosicoesAro * 3600 / kPosicoesAro);
-            cursor_aro_ = Forma(raiz_, 22, 22, 0, 0, 0xD97757);
+            cursor_aro_ = Forma(raiz_, 22, 22, 0, 0, 0x00FF00);
             angulo_aro_ = alvo_aro_ = alvo;
             PosicionarNoAro(cursor_aro_, alvo);
-            cidade_aro_ = Rotulo(Fontes::Grande(), 0xD97757, "");
+            cidade_aro_ = Rotulo(Fontes::Grande(), 0x00FF00, "");
             lv_obj_set_size(cidade_aro_, 260, lv_font_get_line_height(Fontes::Grande()));  // uma linha (LONG_DOT)
             lv_label_set_long_mode(cidade_aro_, LV_LABEL_LONG_DOT);
             lv_obj_set_style_text_align(cidade_aro_, LV_TEXT_ALIGN_CENTER, 0);
@@ -408,7 +408,7 @@ public:
             lv_obj_align(ponto_, LV_ALIGN_TOP_MID, 0, 96);
             titulo_gravacao_ = Rotulo(Fontes::Grande(), 0xEDEDED, "");
             lv_obj_align(titulo_gravacao_, LV_ALIGN_TOP_MID, 0, 140);
-            cronometro_ = Rotulo(Fontes::Grande(), 0xD97757, "00:00");
+            cronometro_ = Rotulo(Fontes::Grande(), 0x00FF00, "00:00");
             lv_obj_set_style_transform_scale(cronometro_, 512, 0);  // 2x
             lv_obj_set_style_transform_pivot_x(cronometro_, LV_PCT(50), 0);
             lv_obj_align(cronometro_, LV_ALIGN_TOP_MID, 0, 200);
@@ -460,7 +460,7 @@ public:
         }
         for (int i = 0; i < 2; i++) {
             bool sel = i == botao;
-            lv_obj_set_style_bg_color(botoes_gravacao_[i], lv_color_hex(sel ? 0xD97757 : 0x2A2A2A), 0);
+            lv_obj_set_style_bg_color(botoes_gravacao_[i], lv_color_hex(sel ? 0x00FF00 : 0x2A2A2A), 0);
             lv_obj_set_style_text_color(lv_obj_get_child(botoes_gravacao_[i], 0), lv_color_hex(sel ? 0x000000 : 0xEDEDED), 0);
         }
         if (destino_gravacao_ != nullptr && destino != lv_label_get_text(destino_gravacao_)) {
@@ -514,7 +514,7 @@ public:
         lv_obj_set_style_pad_all(texto_box_, 0, 0);
         lv_obj_set_scroll_dir(texto_box_, LV_DIR_VER);
         lv_obj_set_scrollbar_mode(texto_box_, LV_SCROLLBAR_MODE_ACTIVE);
-        lv_obj_set_style_bg_color(texto_box_, lv_color_hex(0xD97757), LV_PART_SCROLLBAR);
+        lv_obj_set_style_bg_color(texto_box_, lv_color_hex(0x00FF00), LV_PART_SCROLLBAR);
         lv_obj_align(texto_box_, LV_ALIGN_TOP_MID, 0, texto_y);
         auto rotulo = lv_label_create(texto_box_);
         lv_obj_set_width(rotulo, 288);
@@ -734,7 +734,7 @@ private:
 
     // Spinner (arco laranja girando) reaproveitado nas telas de carregamento e nas listas
     static lv_obj_t* Spinner(lv_obj_t* pai, int tamanho, int espessura, uint32_t cor_fundo,
-                             uint32_t cor = 0xD97757) {
+                             uint32_t cor = 0x00FF00) {
         return SpinnerWatcher(pai, tamanho, espessura, cor_fundo, cor);
     }
 
@@ -795,7 +795,7 @@ private:
     }
 
     void Cabecalho(const std::string& texto) {
-        auto r = Rotulo(Fontes::Grande(), 0xD97757, texto);
+        auto r = Rotulo(Fontes::Grande(), 0x00FF00, texto);
         // Uma linha só: sem altura fixa o LONG_DOT quebra linha, e um título longo (nome de sessão) descia
         // por cima do texto da tela
         lv_obj_set_size(r, 260, lv_font_get_line_height(Fontes::Grande()));
@@ -832,7 +832,7 @@ private:
             lv_obj_set_style_border_width(caixa, 0, 0);
             lv_obj_set_style_pad_all(caixa, 6, 0);
             lv_obj_remove_flag(caixa, LV_OBJ_FLAG_SCROLLABLE);
-            lv_obj_set_style_bg_color(caixa, lv_color_hex(atual ? 0xD97757 : 0x1C1C1C), 0);
+            lv_obj_set_style_bg_color(caixa, lv_color_hex(atual ? 0x00FF00 : 0x1C1C1C), 0);
             lv_obj_set_style_bg_opa(caixa, atual ? LV_OPA_COVER : LV_OPA_70, 0);
             lv_obj_align(caixa, LV_ALIGN_TOP_MID, 0, linha * 84);
             const auto& item = itens_[i];
@@ -842,12 +842,12 @@ private:
             lv_text_align_t alinhamento = LV_TEXT_ALIGN_CENTER;
             if (item.icone != nullptr && strcmp(item.icone, MATERIAL_SYMBOLS_PROGRESS_ACTIVITY) == 0) {
                 // Em execução: spinner girando no lugar do ícone
-                auto sp = Spinner(caixa, 30, 4, atual ? 0xB85F42 : 0x2A2A2A, atual ? 0x000000 : 0xD97757);
+                auto sp = Spinner(caixa, 30, 4, atual ? 0x00B000 : 0x2A2A2A, atual ? 0x000000 : 0x00FF00);
                 lv_obj_align(sp, LV_ALIGN_LEFT_MID, 8, 0);
                 largura -= 50;
                 x_texto = 50;
             } else if (item.icone != nullptr) {
-                auto ic = Rotulo(&font_material_symbols_30_4, atual ? 0x000000 : 0xD97757, item.icone, caixa);
+                auto ic = Rotulo(&font_material_symbols_30_4, atual ? 0x000000 : 0x00FF00, item.icone, caixa);
                 lv_obj_align(ic, LV_ALIGN_LEFT_MID, 8, 0);
                 largura -= 50;
                 x_texto = 50;
@@ -860,7 +860,7 @@ private:
             lv_obj_set_style_text_align(t, alinhamento, 0);
             lv_obj_align(t, LV_ALIGN_TOP_LEFT, x_texto, item.detalhe.empty() ? 14 : 0);
             if (!item.detalhe.empty()) {
-                auto d = Rotulo(Fontes::Pequena(), atual ? 0x2A140C : 0x9A9A9A, item.detalhe, caixa);
+                auto d = Rotulo(Fontes::Pequena(), atual ? 0x0A1A0A : 0x9A9A9A, item.detalhe, caixa);
                 lv_obj_set_size(d, largura, 26);
                 lv_label_set_long_mode(d, LV_LABEL_LONG_DOT);
                 lv_obj_set_style_text_align(d, alinhamento, 0);
@@ -926,7 +926,7 @@ private:
                 celulas_.push_back(celula);
                 continue;
             }
-            auto ic = Rotulo(&font_material_symbols_30_4, 0xD97757,
+            auto ic = Rotulo(&font_material_symbols_30_4, 0x00FF00,
                              item.icone != nullptr ? item.icone : MATERIAL_SYMBOLS_ROBOT_2, celula);
             lv_obj_set_style_transform_scale(ic, 358, 0);
             lv_obj_set_style_transform_pivot_x(ic, LV_PCT(50), 0);
@@ -956,7 +956,7 @@ private:
         lv_obj_set_size(disco, 20, 20);
         lv_obj_set_style_radius(disco, LV_RADIUS_CIRCLE, 0);
         lv_obj_set_style_border_width(disco, 4, 0);
-        lv_obj_set_style_border_color(disco, lv_color_hex(0xD97757), 0);
+        lv_obj_set_style_border_color(disco, lv_color_hex(0x00FF00), 0);
         lv_obj_center(disco);
         static const lv_point_precise_t kRaios[8][2] = {
             {{22, 1}, {22, 7}},   {{22, 37}, {22, 43}}, {{1, 22}, {7, 22}},   {{37, 22}, {43, 22}},
@@ -966,7 +966,7 @@ private:
             lv_line_set_points(l, raio, 2);
             lv_obj_set_style_line_width(l, 4, 0);
             lv_obj_set_style_line_rounded(l, true, 0);
-            lv_obj_set_style_line_color(l, lv_color_hex(0xD97757), 0);
+            lv_obj_set_style_line_color(l, lv_color_hex(0x00FF00), 0);
         }
     }
 
@@ -994,7 +994,7 @@ private:
             lv_line_set_points(l, raio, 2);
             lv_obj_set_style_line_width(l, 5, 0);
             lv_obj_set_style_line_rounded(l, true, 0);
-            lv_obj_set_style_line_color(l, lv_color_hex(0xD97757), 0);
+            lv_obj_set_style_line_color(l, lv_color_hex(0x00FF00), 0);
         }
     }
 
@@ -1010,7 +1010,7 @@ private:
         lv_obj_set_size(janela, 46, 40);
         lv_obj_set_style_radius(janela, 10, 0);
         lv_obj_set_style_border_width(janela, 4, 0);
-        lv_obj_set_style_border_color(janela, lv_color_hex(0xD97757), 0);
+        lv_obj_set_style_border_color(janela, lv_color_hex(0x00FF00), 0);
         static const lv_point_precise_t kSeta[] = {{11, 13}, {19, 20}, {11, 27}};
         static const lv_point_precise_t kTraco[] = {{24, 27}, {35, 27}};
         const lv_point_precise_t* tracos[] = {kSeta, kTraco};
@@ -1020,7 +1020,7 @@ private:
             lv_line_set_points(l, tracos[k], pontos[k]);
             lv_obj_set_style_line_width(l, 4, 0);
             lv_obj_set_style_line_rounded(l, true, 0);
-            lv_obj_set_style_line_color(l, lv_color_hex(0xD97757), 0);
+            lv_obj_set_style_line_color(l, lv_color_hex(0x00FF00), 0);
         }
     }
 
@@ -1043,7 +1043,7 @@ private:
             lv_line_set_points(l, tracos[k], pontos[k]);
             lv_obj_set_style_line_width(l, 4, 0);
             lv_obj_set_style_line_rounded(l, true, 0);
-            lv_obj_set_style_line_color(l, lv_color_hex(0xD97757), 0);
+            lv_obj_set_style_line_color(l, lv_color_hex(0x00FF00), 0);
         }
     }
 
@@ -1054,10 +1054,10 @@ private:
         for (int i = 0; i < (int)celulas_.size(); i++) {
             bool atual = i == selecionado_;
             auto celula = celulas_[i];
-            lv_obj_set_style_bg_color(celula, lv_color_hex(atual ? 0xD97757 : 0x1C1C1C), 0);
+            lv_obj_set_style_bg_color(celula, lv_color_hex(atual ? 0x00FF00 : 0x1C1C1C), 0);
             lv_obj_set_style_bg_opa(celula, atual ? LV_OPA_COVER : LV_OPA_70, 0);
             auto ic = lv_obj_get_child(celula, 0);
-            uint32_t cor = atual ? 0x000000 : 0xD97757;
+            uint32_t cor = atual ? 0x000000 : 0x00FF00;
             if (ic != nullptr && lv_obj_has_flag(ic, LV_OBJ_FLAG_USER_1)) {  // sol de contorno: pinta as partes
                 for (uint32_t k = 0; k < lv_obj_get_child_count(ic); k++) {
                     auto parte = lv_obj_get_child(ic, k);
@@ -1102,7 +1102,7 @@ private:
             lv_obj_set_style_pad_ver(b, 0, 0);
             lv_obj_set_style_border_width(b, atual ? 0 : 2, 0);
             lv_obj_set_style_border_color(b, lv_color_hex(0x3A3A3A), 0);
-            lv_obj_set_style_bg_color(b, lv_color_hex(atual ? 0xD97757 : 0x000000), 0);
+            lv_obj_set_style_bg_color(b, lv_color_hex(atual ? 0x00FF00 : 0x000000), 0);
             lv_obj_remove_flag(b, LV_OBJ_FLAG_SCROLLABLE);
             auto r = Rotulo(Fontes::Pequena(), atual ? 0x000000 : 0xEDEDED, botoes_[i], b);
             lv_obj_center(r);

@@ -50,7 +50,7 @@ public:
 
 private:
     static constexpr int kPaginas = 3;
-    static constexpr uint32_t kLaranja = 0xD97757;
+    static constexpr uint32_t kLaranja = 0x00FF00;
     static constexpr uint32_t kBranco = 0xFFFFFF;
     static constexpr uint32_t kCinza = 0xB4B4B4;
 
