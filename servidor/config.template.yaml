@@ -2,11 +2,11 @@
 # Só sobrescreve o que muda em relação ao config.yaml original do xiaozhi-server.
 
 server:
-  ip: 127.0.0.1          # só local; a internet chega pelo Tailscale Funnel
+  ip: ${IP_ESCUTA}          # 127.0.0.1 no Tailscale Funnel; 0.0.0.0 em rede local (URL_BASE_*)
   port: 8000
   http_port: 8003
-  websocket: wss://${HOST_PUBLICO}/${SEGREDO}/ws/xiaozhi/v1/
-  vision_explain: https://${HOST_PUBLICO}/${SEGREDO}/http/mcp/vision/explain
+  websocket: ${URL_WS}
+  vision_explain: ${URL_VISAO}
   timezone_offset: -3
   auth_key: ${AUTH_KEY}
   auth:
@@ -100,7 +100,7 @@ selected_module:
   ASR: OpenaiASR      # tipo "openai" = qualquer API compatível (OpenRouter, OpenAI...)
   LLM: OpenAILLM
   VLLM: OpenAIVLLM
-  TTS: OpenAITTS
+  TTS: ${TTS_MODULO}   # OpenAITTS (OpenAI/compatível) ou ElevenTTS (ElevenLabs via type: custom)
   Memory: nomem
   Intent: function_call
 
@@ -119,8 +119,8 @@ Intent:
 ASR:
   OpenaiASR:
     type: openai
-    api_key: ${API_KEY}
-    base_url: ${API_BASE_URL}/audio/transcriptions
+    api_key: ${API_KEY_ASR}
+    base_url: ${BASE_ASR}/audio/transcriptions
     model_name: ${MODELO_ASR}
     output_dir: tmp/
 
@@ -141,11 +141,30 @@ VLLM:
 TTS:
   OpenAITTS:
     type: openai
-    api_key: ${API_KEY}
-    api_url: ${API_BASE_URL}/audio/speech
+    api_key: ${API_KEY_TTS}
+    api_url: ${BASE_TTS}/audio/speech
     model: ${MODELO_TTS}
     voice: ${VOZ}
     speed: 1.05
     format: ${TTS_FORMATO}
-    language: ${IDIOMA_NOME}
+    language: "${IDIOMA_RESPOSTA}"
+    output_dir: tmp/
+
+  # ElevenLabs pelo provedor genérico "custom" (JSON no corpo, chave no cabeçalho).
+  # VOZ_ID está na URL; ELEVEN_MODELO escolhe qualidade x preço:
+  #   eleven_flash_v2_5  = 0,5 crédito/char, ~32 idiomas (rápido e barato)
+  #   eleven_multilingual_v2 = 1 crédito/char, melhor prosódia
+  ElevenTTS:
+    type: custom
+    url: https://api.elevenlabs.io/v1/text-to-speech/${VOZ_ID}?output_format=mp3_44100_128
+    method: POST
+    headers:
+      xi-api-key: ${API_KEY_TTS}
+      Content-Type: application/json
+    params:
+      text: "{prompt_text}"
+      model_id: ${ELEVEN_MODELO}
+    format: mp3
+    tts_timeout: 30
+    language: "${IDIOMA_RESPOSTA}"
     output_dir: tmp/

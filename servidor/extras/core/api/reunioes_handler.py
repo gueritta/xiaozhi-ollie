@@ -6,6 +6,8 @@ mais recentes primeiro, no máximo 30. Título = 1ª linha de resumo.md (ou "Pro
 
 import asyncio
 import json
+import os
+import shutil
 import subprocess
 import wave
 from datetime import datetime
@@ -19,7 +21,7 @@ from core.utils.icloud import ler_texto
 from core.utils.idioma import t
 from core.utils.vigia import rotulo_dia
 
-FFPROBE = "/opt/homebrew/bin/ffprobe"
+FFPROBE = os.environ.get("WATCHER_FFPROBE") or shutil.which("ffprobe") or "/opt/homebrew/bin/ffprobe"
 LIMITE = 30
 
 

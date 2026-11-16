@@ -17,12 +17,25 @@ if [[ ! -d xiaozhi-server ]]; then
   rm -rf "$tmp"
 fi
 
+if ! command -v uv >/dev/null 2>&1; then
+  echo "Falta o uv. Instale com: curl -LsSf https://astral.sh/uv/install.sh | sh" >&2
+  exit 1
+fi
+
 cp arquivos/agent-base-prompt-ptbr.txt arquivos/requirements-mac.txt xiaozhi-server/
 
 if [[ ! -x xiaozhi-server/.venv/bin/python ]]; then
   uv venv -q --python 3.10 xiaozhi-server/.venv
 fi
-uv pip install -q --python xiaozhi-server/.venv/bin/python -r xiaozhi-server/requirements-mac.txt
+if [[ "$(uname -s)" == "Darwin" ]]; then
+  uv pip install -q --python xiaozhi-server/.venv/bin/python -r xiaozhi-server/requirements-mac.txt
+else
+  # Linux: o wheel padrão do PyPI para o torch traz CUDA (vários GB). O servidor só usa
+  # o torch no VAD local, então o build CPU basta e economiza ~3 GB de disco.
+  uv pip install -q --python xiaozhi-server/.venv/bin/python \
+    --index-url https://download.pytorch.org/whl/cpu "torch==2.2.2" "torchaudio==2.2.2"
+  uv pip install -q --python xiaozhi-server/.venv/bin/python -r xiaozhi-server/requirements-mac.txt
+fi
 
 xiaozhi-server/.venv/bin/python patches/traduzir_servidor.py
 

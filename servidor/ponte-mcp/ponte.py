@@ -14,7 +14,9 @@ from __future__ import annotations
 
 import json
 import os
+import platform
 import re
+import shlex
 import shutil
 import subprocess
 import tempfile
@@ -26,6 +28,7 @@ from pathlib import Path
 from mcp.server.fastmcp import FastMCP
 
 HOME = Path.home()
+# macOS: Homebrew. Linux: ~/.local/bin e /usr/local/bin primeiro.
 os.environ["PATH"] = ":".join(
     [str(HOME / ".local/bin"), "/opt/homebrew/bin", "/usr/local/bin", "/usr/bin", "/bin", "/usr/sbin", "/sbin"]
 )
@@ -853,13 +856,25 @@ def multica_autopilot(autopilot: str = "", disparar: bool = False, confirmado: b
 _uso_cache = {"quando": 0.0, "dados": None}
 
 
+def _credencial_claude() -> tuple[int, str]:
+    """Devolve (0, json) com a credencial OAuth do Claude Code.
+    macOS: Keychain (security). Linux/outros: o arquivo que o próprio Claude Code grava."""
+    if platform.system() == "Darwin":
+        return _run(["security", "find-generic-password", "-s", "Claude Code-credentials", "-w"], 10)
+    arq = Path(os.environ.get("CLAUDE_CREDENCIAIS", Path.home() / ".claude/.credentials.json"))
+    if not arq.exists():
+        return 1, ""
+    return 0, arq.read_text(encoding="utf-8", errors="replace")
+
+
 def uso_claude_dados(idade_max_s: int = 120) -> dict:
     """Lê os limites do plano com uma chamada mínima (max_tokens=1) usando o token OAuth do Claude Code
-    guardado no Keychain; a resposta traz os cabeçalhos anthropic-ratelimit-unified-*.
-    Mesma técnica do projeto watcher-claude-usage, mas o token não sai do Mac."""
+    guardado no Keychain (macOS) ou em ~/.claude/.credentials.json (Linux); a resposta traz os cabeçalhos
+    anthropic-ratelimit-unified-*.
+    Mesma técnica do projeto watcher-claude-usage, mas o token não sai do computador."""
     if _uso_cache["dados"] and time.time() - _uso_cache["quando"] < idade_max_s:
         return _uso_cache["dados"]
-    code, saida = _run(["security", "find-generic-password", "-s", "Claude Code-credentials", "-w"], 10)
+    code, saida = _credencial_claude()
     if code != 0:
         return {"ok": False, "erro": t("Credencial do Claude Code não encontrada no Keychain.",
                                          "Claude Code credential not found in the Keychain.",
@@ -1025,49 +1040,97 @@ def conversas_buscar(termo: str = "", dias: int = 30) -> str:
     return "\n\n".join(achados) or f"Não achei “{termo}” nas conversas dos últimos {dias} dias."
 
 
-# ---------------------------------------------------------------- Mac
+# ---------------------------------------------------------------- máquina
+
+ATALHOS_ARQUIVO = Path(os.environ.get("WATCHER_ATALHOS",
+                                      Path(__file__).resolve().parent.parent / "atalhos.json"))
+
+
+def _atalhos_linux() -> dict:
+    """Ações permitidas (Linux/Windows): nome -> {"descricao", "argv", "aceita_entrada"}.
+    Lido de atalhos.json; nunca do shell, para manter a regra de não aceitar comando livre."""
+    if not ATALHOS_ARQUIVO.exists():
+        return {}
+    try:
+        dados = json.loads(ATALHOS_ARQUIVO.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    acoes = dados.get("atalhos", dados)
+    return acoes if isinstance(acoes, dict) else {}
+
 
 @mcp.tool()
 def mac_status() -> str:
-    """Status do Mac: tempo ligado, carga, memória livre e espaço em disco."""
+    """Status do computador: tempo ligado, carga, memória livre e espaço em disco."""
     _, up = _run(["uptime"])
     _, disco = _run(["df", "-h", *os.environ.get("WATCHER_DISCOS", "/").split(":")])
-    _, mem = _run(["memory_pressure", "-Q"])
+    if platform.system() == "Darwin":
+        _, mem = _run(["memory_pressure", "-Q"])
+    else:
+        _, mem = _run(["free", "-m"])
     return _corta(f"{up}\n{disco}\n{mem}", 1500)
 
 
 @mcp.tool()
 def mac_atalhos_listar() -> str:
-    """Lista os Atalhos (app Shortcuts) do Mac que podem ser executados."""
-    _, out = _run(["shortcuts", "list"])
-    return _corta(out, 2500)
+    """Lista as ações que podem ser executadas neste computador (Atalhos no macOS, lista permitida no Linux)."""
+    if platform.system() == "Darwin":
+        _, out = _run(["shortcuts", "list"])
+        return _corta(out, 2500)
+    acoes = _atalhos_linux()
+    if not acoes:
+        return f"Nenhuma ação configurada em {ATALHOS_ARQUIVO}."
+    linhas = [f"- {nome}: {acao.get('descricao', '')}".rstrip() for nome, acao in sorted(acoes.items())]
+    return _corta("\n".join(linhas), 2500)
 
 
 @mcp.tool()
 def mac_atalho_executar(nome: str, entrada: str = "", confirmado: bool = False) -> str:
-    """Executa um Atalho do macOS pelo nome exato (veja mac_atalhos_listar). É o jeito de fazer ações no Mac. Exige confirmado=true."""
-    pend = _confirmar(confirmado, f"executar o atalho “{nome}” no Mac")
+    """Executa uma ação do computador pelo nome exato (veja mac_atalhos_listar). É o jeito de fazer ações aqui. Exige confirmado=true."""
+    pend = _confirmar(confirmado, f"executar a ação “{nome}” no computador")
     if pend:
         return pend
-    cmd = ["shortcuts", "run", nome]
+    if platform.system() == "Darwin":
+        cmd = ["shortcuts", "run", nome]
+        if entrada:
+            arq = tempfile.mktemp(suffix=".txt")
+            Path(arq).write_text(entrada)
+            cmd += ["--input-path", arq]
+        code, out = _run(cmd, timeout=60)
+        return f"Atalho executado. {out.strip()[:500]}" if code == 0 else f"erro: {out[:500]}"
+    # Linux/Windows: só os argv da lista permitida, sem shell
+    acoes = _atalhos_linux()
+    acao = acoes.get(nome)
+    if not isinstance(acao, dict):
+        disponiveis = ", ".join(sorted(acoes)) or "(nenhuma)"
+        return f"erro: ação “{nome}” não está na lista permitida. Disponíveis: {disponiveis}"
+    argv = [str(a) for a in acao.get("argv") or []]
+    if not argv:
+        return f"erro: ação “{nome}” sem argv em {ATALHOS_ARQUIVO}"
     if entrada:
-        arq = tempfile.mktemp(suffix=".txt")
-        Path(arq).write_text(entrada)
-        cmd += ["--input-path", arq]
-    code, out = _run(cmd, timeout=60)
-    return f"Atalho executado. {out.strip()[:500]}" if code == 0 else f"erro: {out[:500]}"
+        if not acao.get("aceita_entrada"):
+            return f"erro: ação “{nome}” não aceita texto de entrada"
+        argv = argv + [entrada]
+    code, out = _run(argv, timeout=acao.get("timeout", 60))
+    return f"Ação executada. {out.strip()[:500]}" if code == 0 else f"erro: {out[:500]}"
 
 
 @mcp.tool()
 def mac_notificar(mensagem: str) -> str:
-    """Mostra uma notificação na tela do Mac mini."""
+    """Mostra uma notificação na tela deste computador."""
     msg = mensagem.replace('"', "'")[:200]
-    code, out = _run(["osascript", "-e", f'display notification "{msg}" with title "SenseCAP Watcher"'])
+    if platform.system() == "Darwin":
+        code, out = _run(["osascript", "-e", f'display notification "{msg}" with title "SenseCAP Watcher"'])
+    else:
+        code, out = _run(["notify-send", "-a", "Ollie", "SenseCAP Watcher", msg])
     return "Notificação exibida." if code == 0 else f"erro: {out[:300]}"
 
 
 if __name__ == "__main__":
-    faltando = [c for c in ("herdr", "claude", "codex", "multica", "shortcuts") if not shutil.which(c)]
+    if platform.system() == "Darwin":
+        faltando = [c for c in ("herdr", "claude", "codex", "multica", "shortcuts") if not shutil.which(c)]
+    else:
+        faltando = [c for c in ("herdr", "claude", "codex", "multica", "notify-send") if not shutil.which(c)]
     if faltando:
         import sys
         print(f"aviso: comandos ausentes no PATH: {faltando}", file=sys.stderr)

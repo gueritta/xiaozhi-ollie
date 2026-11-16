@@ -6,8 +6,7 @@ import time
 from pathlib import Path
 
 from core.utils.icloud import ler_texto
-
-PASTA = Path.home() / "Library/Mobile Documents/com~apple~CloudDocs/Watcher"
+from core.utils.pasta import RAIZ as PASTA
 LIMITE = 8000  # caracteres, para não pesar o prompt
 
 

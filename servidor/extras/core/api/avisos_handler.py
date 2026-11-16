@@ -1,5 +1,7 @@
 """GET /watcher/avisos?desde=N — avisos para a tela do Watcher (mesmo token do WebSocket)."""
 
+import os
+
 from aiohttp import web
 
 from core.auth import AuthManager
@@ -116,7 +118,8 @@ class AvisosHandler:
         if not self._autorizado(request):
             return web.json_response({"erro": "não autorizado"}, status=401)
         from pathlib import Path
-        arq = Path.home() / "Library/Mobile Documents/com~apple~CloudDocs/Watcher/QR.md"
+        from core.utils.pasta import sub
+        arq = Path(os.environ.get("WATCHER_QR") or sub("QR.md"))
         if not arq.exists():
             arq.parent.mkdir(parents=True, exist_ok=True)
             arq.write_text(t("# QR codes do Watcher\n\nUma linha por QR: Título | conteúdo (link, texto, contato).\n\n",

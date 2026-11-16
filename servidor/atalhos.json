@@ -1,0 +1,25 @@
+{
+  "_leia": "Ações que o Ollie pode executar no Linux. O assistente chama mac_atalho_executar(nome) e a ponte roda só o argv abaixo, sem shell: nada de comando livre. Caminho: WATCHER_ATALHOS, padrão servidor/atalhos.json.",
+  "atalhos": {
+    "bloquear-tela": {
+      "descricao": "Bloqueia a sessão (pede a senha para voltar)",
+      "argv": ["loginctl", "lock-session"],
+      "timeout": 15
+    },
+    "suspender": {
+      "descricao": "Suspende o computador",
+      "argv": ["systemctl", "suspend"],
+      "timeout": 15
+    },
+    "volume-mudo": {
+      "descricao": "Liga/desliga o mudo da saída de áudio",
+      "argv": ["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "toggle"],
+      "timeout": 15
+    },
+    "volume-10": {
+      "descricao": "Sobe o volume da saída de áudio em 10%",
+      "argv": ["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", "10%+"],
+      "timeout": 15
+    }
+  }
+}

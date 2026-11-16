@@ -9,6 +9,7 @@ GET  /watcher/memoria/audio/{nome}                                      áudio .
 """
 
 import asyncio
+import os
 import re
 from pathlib import Path
 
@@ -16,10 +17,11 @@ from aiohttp import web
 
 from core.api.avisos_handler import AvisosHandler
 from core.utils import memoria
+from core.utils.pasta import sub
 from core.utils.reuniao import processar_backup
 from core.utils.vigia import ponte_carregada
 
-DESTINO = Path.home() / "Library/Mobile Documents/com~apple~CloudDocs/Watcher/Do cartão"
+DESTINO = Path(os.environ.get("WATCHER_PASTA_CARTAO") or sub("Do cartão"))
 NOME_VALIDO = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
 
 

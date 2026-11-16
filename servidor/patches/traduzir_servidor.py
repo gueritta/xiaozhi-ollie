@@ -249,12 +249,13 @@ TROCAS: list[tuple[str, str, str]] = [
                 app.add_routes([web.get("/watcher/visao", CartaoHandler(self.config).handle_visao)])
 """),
     # Depuração: WATCHER_REGISTRAR_PROMPT=1 grava a última requisição ao modelo em data/ultimo_prompt.json
-    ("core/providers/llm/openai/openai.py", """        stream = self.client.chat.completions.create(**request_params)""", """        if os.environ.get("WATCHER_REGISTRAR_PROMPT") == "1":
+    # (__import__("os") porque este arquivo pode não importar os no topo)
+    ("core/providers/llm/openai/openai.py", """        stream = self.client.chat.completions.create(**request_params)""", """        if __import__("os").environ.get("WATCHER_REGISTRAR_PROMPT") == "1":
             import json as _json
             with open("data/ultimo_prompt.json", "w", encoding="utf-8") as _f:
                 _json.dump(request_params, _f, ensure_ascii=False, indent=1, default=str)
         stream = self.client.chat.completions.create(**request_params)"""),
-    ("core/providers/llm/openai/openai.py", """        responses = self.client.chat.completions.create(**request_params)""", """        if os.environ.get("WATCHER_REGISTRAR_PROMPT") == "1":
+    ("core/providers/llm/openai/openai.py", """        responses = self.client.chat.completions.create(**request_params)""", """        if __import__("os").environ.get("WATCHER_REGISTRAR_PROMPT") == "1":
             import json as _json
             with open("data/ultimo_prompt_sem_ferramentas.json", "w", encoding="utf-8") as _f:
                 _json.dump(request_params, _f, ensure_ascii=False, indent=1, default=str)

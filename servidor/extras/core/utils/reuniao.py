@@ -14,6 +14,8 @@ Backup do Watcher (espelhar()).
 import html
 import json
 import os
+import platform
+import shutil
 import subprocess
 import tempfile
 import threading
@@ -32,7 +34,7 @@ ESPELHO = Path(os.environ.get(
 ))
 TAXA = 16000
 MINUTOS_POR_PARTE = 10
-FFMPEG = "/opt/homebrew/bin/ffmpeg"
+FFMPEG = os.environ.get("WATCHER_FFMPEG") or shutil.which("ffmpeg") or "/opt/homebrew/bin/ffmpeg"
 # Nomes próprios que o modelo de transcrição deve reconhecer (ajuste em WATCHER_VOCABULARIO)
 VOCABULARIO = os.environ.get("WATCHER_VOCABULARIO", "Claude Code, Codex, herdr, Multica")
 
@@ -144,9 +146,11 @@ class GravadorReuniao:
                              "会议已录制，但处理失败", "Reunión grabada, pero el procesamiento falló") + f": {e}")
 
     def _transcrever(self) -> str:
-        base = os.environ.get("API_BASE_URL", "https://openrouter.ai/api/v1")
-        chave = os.environ.get("API_KEY", "")
-        modelo = os.environ.get("MODELO_ASR_REUNIAO", "openai/gpt-4o-transcribe")
+        # Transcrição usa o provedor de ASR (Groq/OpenAI), não o do modelo de conversa:
+        # DeepSeek e OpenRouter não têm /audio/transcriptions.
+        base = os.environ.get("URL_BASE_ASR") or os.environ.get("API_BASE_URL", "https://openrouter.ai/api/v1")
+        chave = os.environ.get("API_KEY_ASR") or os.environ.get("API_KEY", "")
+        modelo = os.environ.get("MODELO_ASR_REUNIAO") or os.environ.get("MODELO_ASR", "whisper-large-v3")
         partes_txt = []
         with tempfile.TemporaryDirectory() as tmp:
             subprocess.run([FFMPEG, "-y", "-loglevel", "error", "-i", str(self.caminho_wav), "-f", "segment",
@@ -175,6 +179,12 @@ class GravadorReuniao:
         return r.json()["choices"][0]["message"]["content"].strip()
 
     def _nota_apple(self, titulo: str, resumo: str, transcricao: str):
+        # Apple Notes só existe no macOS. Fora dele o resumo.md/transcricao.md na pasta da
+        # reunião já é a nota (a pasta pode estar no Syncthing, Obsidian, Joplin...).
+        if platform.system() != "Darwin":
+            self._log(f"sem Apple Notes aqui: nota é {self.pasta / 'resumo.md'}")
+            return
+
         def bloco(md):
             linhas = []
             for l in md.splitlines():
@@ -200,8 +210,13 @@ end tell'''
 
     def _notificar(self, msg: str):
         msg = msg.replace('"', "'")[:200]
-        subprocess.run(["osascript", "-e", f'display notification "{msg}" with title "Watcher: {t("gravador", "recorder", "录音机", "grabadora")}"'],
-                       capture_output=True, timeout=15)
+        titulo = f"Watcher: {t('gravador', 'recorder', '录音机', 'grabadora')}"
+        if platform.system() == "Darwin":
+            subprocess.run(["osascript", "-e", f'display notification "{msg}" with title "{titulo}"'],
+                           capture_output=True, timeout=15)
+        else:
+            subprocess.run(["notify-send", "-a", "Ollie", titulo, msg],
+                           capture_output=True, timeout=15)
 
 
 def gravar_info(pasta: Path, inicio: datetime, duracao_s: float) -> None:

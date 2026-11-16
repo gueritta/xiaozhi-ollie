@@ -8,6 +8,7 @@ firmware toca (AudioService::PlaySound). Os áudios ficam em cache pelo hash do 
 import hashlib
 import json
 import os
+import shutil
 import subprocess
 import time
 from datetime import datetime
@@ -17,10 +18,9 @@ import requests
 
 from core.utils.icloud import ler_texto
 from core.utils.idioma import NOME, t
-
-ICLOUD = Path.home() / "Library/Mobile Documents/com~apple~CloudDocs/Watcher"
+from core.utils.pasta import RAIZ as ICLOUD
 CACHE = Path(os.environ.get("WATCHER_CACHE_MEMORIA", Path(__file__).resolve().parents[2] / "data/memoria"))
-FFMPEG = "/opt/homebrew/bin/ffmpeg"
+FFMPEG = os.environ.get("WATCHER_FFMPEG") or shutil.which("ffmpeg") or "/opt/homebrew/bin/ffmpeg"
 _ultimo = {"quando": 0.0, "itens": []}
 MESES_EN = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
@@ -74,7 +74,7 @@ def _reunioes(limite: int = 3) -> list[dict]:
 
 
 def _lembretes() -> str:
-    arq = ICLOUD / "Lembretes.md"
+    arq = Path(os.environ.get("WATCHER_LEMBRETES") or ICLOUD / "Lembretes.md")
     if not arq.exists():
         return ""
     itens = [l[2:].strip() for l in ler_texto(arq, padrao="").splitlines() if l.startswith("- ")]
